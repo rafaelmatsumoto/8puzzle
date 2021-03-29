@@ -1,5 +1,4 @@
-import java.util.ArrayList
-import java.util.PriorityQueue
+import java.util.*
 
 class Puzzle {
     var dimension = 3
@@ -8,7 +7,7 @@ class Puzzle {
 
     fun calculateCost(initial: Array<IntArray>, goal: Array<IntArray>): Int {
         var count = 0
-        val n = initial.size
+        val n = dimension
 
         for (i in 0 until n) {
             for (j in 0 until n) {
@@ -32,43 +31,35 @@ class Puzzle {
     }
 
     fun isSafe(x: Int, y: Int): Boolean {
-        return (x in 0 until dimension && y >= 0 && y < dimension)
+        return (x >= 0 && x < dimension && y >= 0 && y < dimension)
     }
 
-    fun printPath(root: Node) {
-        root.parent?.let {
-            printPath(it.parent!!)
-            printMatrix(root.matrix)
-            println()
+    fun printPath(root: Node?) {
+        if (root == null) {
+            return
         }
+
+        printMatrix(root.matrix)
+        println()
     }
 
-    fun isSolvable(matrix: Array<IntArray>): Boolean {
-        var count = 0
-        val array = ArrayList<Int>()
+    fun newNode(matrix: Array<IntArray>, x: Int, y: Int, newX: Int, newY: Int, level: Int, parent: Node?): Node {
+        val result = Node(matrix, parent, x, y)
 
-        for (i in matrix.indices) {
-            for (j in matrix.indices) {
-                array.add(matrix[i][j])
-            }
-        }
+        result.matrix[x][y] = result.matrix[x][y] + result.matrix[newX][newY]
+        result.matrix[newX][newY] = result.matrix[x][y] - result.matrix[newX][newY]
+        result.matrix[x][y] = result.matrix[x][y] - result.matrix[newX][newY]
+        result.cost = Int.MAX_VALUE
+        result.level = level
+        result.x = newX
+        result.y = newY
 
-        val anotherArray = intArrayOf(array.size)
-
-        array.toTypedArray()
-        for (i in 0 until anotherArray.size - 1) {
-            for (j in i + 1 until anotherArray.size) {
-                if (anotherArray[i] != 0 && anotherArray[j] != 0 && anotherArray[i] > anotherArray[j]) {
-                    count++
-                }
-            }
-        }
-        return count % 2 == 0
+        return result
     }
 
     fun solve(initial: Array<IntArray>, goal: Array<IntArray>, x: Int, y: Int) {
-        val pq = PriorityQueue<Node>(1000) { a, b -> (a.cost + a.level) - (b.cost + b.level) }
-        val root = Node(initial, x, y, x, y, 0, null)
+        val pq = PriorityQueue<Node>(5000) { a, b -> (a.cost + a.level) - (b.cost + b.level) }
+        val root = newNode(initial, x, y, x, y, 0, null)
         root.cost = calculateCost(initial, goal)
         pq.add(root)
 
@@ -80,9 +71,9 @@ class Puzzle {
                 return
             }
 
-            for (i in 0..3) {
+            for (i in 0 until 3) {
                 if (isSafe(min.x + row[i], min.y + col[i])) {
-                    val child = Node(min.matrix, min.x, min.y, min.x + row[i], min.y + col[i], min.level + 1, min)
+                    val child = newNode(min.matrix, min.x, min.y, min.x + row[i], min.y + col[i], min.level + 1, min)
                     child.cost = calculateCost(child.matrix, goal)
                     pq.add(child)
                 }
